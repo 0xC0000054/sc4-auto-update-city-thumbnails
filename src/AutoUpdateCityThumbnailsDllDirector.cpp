@@ -44,6 +44,7 @@
 #include "SC4Vector.h"
 #include "Settings.h"
 #include "StringViewUtil.h"
+#include "Stopwatch.h"
 #include <array>
 
  // This must be unique for every plugin. Generate a random 32-bit integer and use it.
@@ -328,7 +329,7 @@ private:
 						}
 					}
 					else
-					{	
+					{
 						if (pSC4App->GetPopupDialogsEnabled())
 						{
 							// Disable popup modal dialog boxes (such as the Reconcile Edges dialog) to prevent
@@ -346,6 +347,11 @@ private:
 						}
 						updateCityThumbnailCheatRunning = true;
 						regionalCityIndex = 0;
+
+						if (settings.LogCityInfo())
+						{
+							stopwatch.Restart();
+						}
 
 						// To prevent a crash within cGZCheatCodeManager::DoDefaultCheatCodeProcessing in some
 						// regions (such as the default Timbuktu region), we must delay loading the first city
@@ -388,6 +394,18 @@ private:
 				if (needToResorePopupModalDialogState)
 				{
 					pSC4App->SetPopupDialogsEnabled(true);
+				}
+
+				if (settings.LogCityInfo())
+				{
+					stopwatch.Stop();
+					// %T is an alias for the %H:%M:%S format.
+					std::string text = std::format(
+						"Processed {} cities in {:%T}",
+						regionalCityLocations.size(),
+						stopwatch.GetElapsedDuration());
+
+					Logger::GetInstance().WriteLine(LogLevel::Info,	text.c_str());
 				}
 				RegisterRegionViewCheatCode();
 			}
@@ -454,6 +472,7 @@ private:
 		return true;
 	}
 
+	Stopwatch stopwatch;
 	std::vector<SC4Point<int32_t>> regionalCityLocations;
 	size_t regionalCityIndex;
 	cISC4App* pSC4App;

@@ -66,6 +66,9 @@
     <ClInclude Include="..\vendor\sc4-dll-utilities\sc4-dll-utilities\include\FileSystem.h">
       <Filter>Header Files\sc4-dll-utilities</Filter>
     </ClInclude>
+    <ClInclude Include="..\vendor\sc4-dll-utilities\sc4-dll-utilities\include\Stopwatch.h">
+      <Filter>Header Files\sc4-dll-utilities</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />

@@ -98,6 +98,7 @@
     <ClInclude Include="..\vendor\sc4-dll-utilities\sc4-dll-utilities\include\FileSystem.h" />
     <ClInclude Include="..\vendor\sc4-dll-utilities\sc4-dll-utilities\include\IniReader.h" />
     <ClInclude Include="..\vendor\sc4-dll-utilities\sc4-dll-utilities\include\Logger.h" />
+    <ClInclude Include="..\vendor\sc4-dll-utilities\sc4-dll-utilities\include\Stopwatch.h" />
     <ClInclude Include="..\vendor\sc4-dll-utilities\sc4-dll-utilities\include\StringViewUtil.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="Settings.h" />
