@@ -75,7 +75,7 @@ public:
 		  pMS2(nullptr),
 		  settings(),
 		  regionalCityIndex(0),
-		  needToResorePopupModalDialogState(false),
+		  needToRestorePopupModalDialogState(false),
 		  postedLoadCityMessage(false),
 		  updateCityThumbnailCheatRegistered(false),
 		  updateCityThumbnailCheatRunning(false)
@@ -343,7 +343,7 @@ private:
 							// (TGI 0, 0x96a006b0, 0xa2dd355) is not a modal dialog box even though it visually
 							// disables rest of the UI.
 							pSC4App->SetPopupDialogsEnabled(false);
-							needToResorePopupModalDialogState = true;
+							needToRestorePopupModalDialogState = true;
 						}
 						updateCityThumbnailCheatRunning = true;
 						regionalCityIndex = 0;
@@ -391,7 +391,7 @@ private:
 			{
 				updateCityThumbnailCheatRunning = false;
 
-				if (needToResorePopupModalDialogState)
+				if (needToRestorePopupModalDialogState)
 				{
 					pSC4App->SetPopupDialogsEnabled(true);
 				}
@@ -478,7 +478,7 @@ private:
 	cISC4App* pSC4App;
 	cIGZMessageServer2* pMS2;
 	Settings settings;
-	bool needToResorePopupModalDialogState;
+	bool needToRestorePopupModalDialogState;
 	bool postedLoadCityMessage;
 	bool updateCityThumbnailCheatRegistered;
 	bool updateCityThumbnailCheatRunning;
