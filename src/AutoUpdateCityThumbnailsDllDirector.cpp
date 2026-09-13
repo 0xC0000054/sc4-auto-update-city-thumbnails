@@ -194,7 +194,7 @@ private:
 
 	void PostLoadCityMessageToSelf()
 	{
-		// Only allow the city load message to be posted for each requested city load.
+		// Only allow the city load message to be posted once for each requested city load.
 		// The game can call this function multiple times through PostRegionInit, and
 		// having more than one city load message in the queue will cause a crash.
 		if (!postedLoadCityMessage)
