@@ -394,6 +394,7 @@ private:
 				if (needToRestorePopupModalDialogState)
 				{
 					pSC4App->SetPopupDialogsEnabled(true);
+					needToRestorePopupModalDialogState = false;
 				}
 
 				if (settings.LogCityInfo())
