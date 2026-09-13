@@ -21,9 +21,13 @@
 
 #include "version.h"
 #include "cIGZApp.h"
+#include "cIGZCanvas.h"
+#include "cIGZCanvasMessaging.h"
+#include "cIGZCanvasW32.h"
 #include "cIGZCheatCodeManager.h"
 #include "cIGZCOM.h"
 #include "cIGZFrameWork.h"
+#include "cIGZKeyMessage.h"
 #include "cIGZMessage2.h"
 #include "cIGZMessage2Standard.h"
 #include "cIGZMessageServer2.h"
@@ -47,6 +51,8 @@
 #include "Stopwatch.h"
 #include <array>
 
+#include <Windows.h>
+
  // This must be unique for every plugin. Generate a random 32-bit integer and use it.
  // DO NOT REUSE DIRECTOR IDS EVER.
 static constexpr uint32_t kAutoUpdateCityThumbnailsDllDirectorID = 0x407A2989;
@@ -54,6 +60,7 @@ static constexpr uint32_t kAutoUpdateCityThumbnailsDllDirectorID = 0x407A2989;
 static constexpr uint32_t kSC4MessagePostRegionInit = 0xCBB5BB45;
 static constexpr uint32_t kSC4MessagePreRegionShutdown = 0x8BB5BB46;
 static constexpr uint32_t kMessageCheatIssued = 0x230E27AC;
+static constexpr uint32_t kKeyMessage = 0x7A104750;
 
 static constexpr uint32_t kMessageAutoUpdateCityThumbnailsLoadCity = 0xC0A03AD0;
 
@@ -66,6 +73,40 @@ static constexpr std::array<uint32_t, 3> MessageIDs
 	kSC4MessagePreRegionShutdown
 };
 
+namespace
+{
+	bool AddKeyMessageTarget(cIGZMessageTarget2* pTarget, bool add)
+	{
+		bool result = false;
+
+		cIGZCanvasPtr canvas;
+
+		if (canvas)
+		{
+			cRZAutoRefCount<cIGZCanvasMessaging> canvasMessaging;
+
+			if (canvas->QueryInterface(GZIID_cIGZCanvasMessaging, canvasMessaging.AsPPVoid()))
+			{
+				cIGZMessageServer2* pMS2 = canvasMessaging->MessageServer();
+
+				if (pMS2)
+				{
+					if (add)
+					{
+						result = pMS2->AddNotification(pTarget, kKeyMessage);
+					}
+					else
+					{
+						result = pMS2->RemoveNotification(pTarget, kKeyMessage);
+					}
+				}
+			}
+		}
+
+		return result;
+	}
+}
+
 class AutoUpdateCityThumbnailsDllDirector : public cRZMessage2COMDirector
 {
 public:
@@ -75,6 +116,8 @@ public:
 		  pMS2(nullptr),
 		  settings(),
 		  regionalCityIndex(0),
+		  escapeKeyPressed(false),
+		  installedEscapeKeyMessageListener(false),
 		  needToRestorePopupModalDialogState(false),
 		  postedLoadCityMessage(false),
 		  updateCityThumbnailCheatRegistered(false),
@@ -105,15 +148,57 @@ private:
 		case kMessageAutoUpdateCityThumbnailsLoadCity:
 			AutoUpdateCityThumbnailsLoadCity();
 			break;
+		case kKeyMessage:
+			ProcessKeyMessage(static_cast<cIGZKeyMessage*>(pMsg));
+			break;
 		}
 
 		return true;
+	}
+
+	void ProcessKeyMessage(cIGZKeyMessage* pKeyMessage)
+	{
+		if (!installedEscapeKeyMessageListener)
+		{
+			// The game appears to broadcast this message to every cIGZMessageTarget2
+			// instance it knows about, even ones that have not subscribed.
+			return;
+		}
+
+		// The key event values match the cIGZWinMgr message codes.
+
+		constexpr uint32_t KeyDownEvent = 5;
+
+		uint32_t eventType = pKeyMessage->EventType();
+
+		if (eventType == KeyDownEvent)
+		{
+			uint32_t vkCode = pKeyMessage->Key();
+
+			if (vkCode == VK_ESCAPE && !escapeKeyPressed)
+			{
+				uint32_t modifiers = pKeyMessage->KeyFlags();
+
+				if (modifiers == 0)
+				{
+					escapeKeyPressed = true;
+				}
+			}
+		}
 	}
 
 	void UpdateRegionalCityThumbnail(const SC4Point<int32_t>& location)
 	{
 		if (pSC4App)
 		{
+			if (escapeKeyPressed)
+			{
+				// If the user pressed the escape key while the city was loading,
+				// exit to the region view without doing anything.
+				pSC4App->RequestGoToRegionView(false);
+				return;
+			}
+
 			cISC4Region* pRegion = pSC4App->GetRegion();
 
 			if (pRegion)
@@ -345,6 +430,8 @@ private:
 							pSC4App->SetPopupDialogsEnabled(false);
 							needToRestorePopupModalDialogState = true;
 						}
+						installedEscapeKeyMessageListener = AddKeyMessageTarget(this, true);
+						escapeKeyPressed = false;
 						updateCityThumbnailCheatRunning = true;
 						regionalCityIndex = 0;
 
@@ -381,7 +468,7 @@ private:
 	{
 		if (updateCityThumbnailCheatRunning)
 		{
-			if (regionalCityIndex < regionalCityLocations.size())
+			if (regionalCityIndex < regionalCityLocations.size() && !escapeKeyPressed)
 			{
 				// The next city is delay loaded using a custom message.
 				// This allows the game to finish sending PostRegionInit to its other subscribers.
@@ -397,7 +484,13 @@ private:
 					needToRestorePopupModalDialogState = false;
 				}
 
-				if (settings.LogCityInfo())
+				if (installedEscapeKeyMessageListener)
+				{
+					AddKeyMessageTarget(this, false);
+					installedEscapeKeyMessageListener = false;
+				}
+
+				if (settings.LogCityInfo() && !escapeKeyPressed)
 				{
 					stopwatch.Stop();
 					// %T is an alias for the %H:%M:%S format.
@@ -408,6 +501,7 @@ private:
 
 					Logger::GetInstance().WriteLine(LogLevel::Info,	text.c_str());
 				}
+				escapeKeyPressed = false;
 				RegisterRegionViewCheatCode();
 			}
 		}
@@ -479,6 +573,8 @@ private:
 	cISC4App* pSC4App;
 	cIGZMessageServer2* pMS2;
 	Settings settings;
+	bool escapeKeyPressed;
+	bool installedEscapeKeyMessageListener;
 	bool needToRestorePopupModalDialogState;
 	bool postedLoadCityMessage;
 	bool updateCityThumbnailCheatRegistered;
