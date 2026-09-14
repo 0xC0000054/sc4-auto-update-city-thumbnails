@@ -21,9 +21,6 @@
 
 #include "version.h"
 #include "cIGZApp.h"
-#include "cIGZCanvas.h"
-#include "cIGZCanvasMessaging.h"
-#include "cIGZCanvasW32.h"
 #include "cIGZCheatCodeManager.h"
 #include "cIGZCOM.h"
 #include "cIGZFrameWork.h"
@@ -72,40 +69,6 @@ static constexpr std::array<uint32_t, 3> MessageIDs
 	kSC4MessagePostRegionInit,
 	kSC4MessagePreRegionShutdown
 };
-
-namespace
-{
-	bool AddKeyMessageTarget(cIGZMessageTarget2* pTarget, bool add)
-	{
-		bool result = false;
-
-		cIGZCanvasPtr canvas;
-
-		if (canvas)
-		{
-			cRZAutoRefCount<cIGZCanvasMessaging> canvasMessaging;
-
-			if (canvas->QueryInterface(GZIID_cIGZCanvasMessaging, canvasMessaging.AsPPVoid()))
-			{
-				cIGZMessageServer2* pMS2 = canvasMessaging->MessageServer();
-
-				if (pMS2)
-				{
-					if (add)
-					{
-						result = pMS2->AddNotification(pTarget, kKeyMessage);
-					}
-					else
-					{
-						result = pMS2->RemoveNotification(pTarget, kKeyMessage);
-					}
-				}
-			}
-		}
-
-		return result;
-	}
-}
 
 class AutoUpdateCityThumbnailsDllDirector : public cRZMessage2COMDirector
 {
@@ -430,7 +393,7 @@ private:
 							pSC4App->SetPopupDialogsEnabled(false);
 							needToRestorePopupModalDialogState = true;
 						}
-						installedEscapeKeyMessageListener = AddKeyMessageTarget(this, true);
+						installedEscapeKeyMessageListener = pMS2->AddNotification(this, kKeyMessage);
 						escapeKeyPressed = false;
 						updateCityThumbnailCheatRunning = true;
 						regionalCityIndex = 0;
@@ -486,7 +449,7 @@ private:
 
 				if (installedEscapeKeyMessageListener)
 				{
-					AddKeyMessageTarget(this, false);
+					pMS2->RemoveNotification(this, kKeyMessage);
 					installedEscapeKeyMessageListener = false;
 				}
 
