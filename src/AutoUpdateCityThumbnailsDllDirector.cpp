@@ -64,7 +64,7 @@ static constexpr uint32_t kMessageAutoUpdateCityThumbnailsLoadCity = 0xC0A03AD0;
 static constexpr uint32_t kAutoUpdateCityThumbnailsCheatID = 0x6F8077E1;
 static const char* const kAutoUpdateCityThumbnailsCheatName = "AutoUpdateCityThumbnails";
 
-static constexpr std::array<uint32_t, 3> MessageIDs
+static constexpr std::array<uint32_t, 2> MessageIDs
 {
 	kSC4MessagePostRegionInit,
 	kSC4MessagePreRegionShutdown
