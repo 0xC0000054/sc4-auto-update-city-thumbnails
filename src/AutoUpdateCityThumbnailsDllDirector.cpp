@@ -112,42 +112,46 @@ private:
 			AutoUpdateCityThumbnailsLoadCity();
 			break;
 		case kKeyMessage:
-			ProcessKeyMessage(static_cast<cIGZKeyMessage*>(pMsg));
-			break;
+			return ProcessKeyMessage(pMsg);
 		}
 
 		return true;
 	}
 
-	void ProcessKeyMessage(cIGZKeyMessage* pKeyMessage)
+	bool ProcessKeyMessage(cIGZMessage2* pMsg)
 	{
-		if (!installedEscapeKeyMessageListener)
+		bool result = false;
+
+		// The game appears to broadcast this message to every cIGZMessageTarget2
+		// instance it knows about, even ones that have not subscribed.
+
+		if (installedEscapeKeyMessageListener)
 		{
-			// The game appears to broadcast this message to every cIGZMessageTarget2
-			// instance it knows about, even ones that have not subscribed.
-			return;
-		}
+			cRZAutoRefCount<cIGZKeyMessage> pKeyMessage;
 
-		// The key event values match the cIGZWinMgr message codes.
-
-		constexpr uint32_t KeyDownEvent = 5;
-
-		uint32_t eventType = pKeyMessage->EventType();
-
-		if (eventType == KeyDownEvent)
-		{
-			uint32_t vkCode = pKeyMessage->Key();
-
-			if (vkCode == VK_ESCAPE && !escapeKeyPressed)
+			if (pMsg->QueryInterface(GZIID_cIGZKeyMessage, pKeyMessage.AsPPVoid()))
 			{
-				uint32_t modifiers = pKeyMessage->KeyFlags();
+				result = true;
+				cIGZKeyMessage::KeyEvent eventType = pKeyMessage->EventType();
 
-				if (modifiers == 0)
+				if (eventType == cIGZKeyMessage::KeyEvent::Down)
 				{
-					escapeKeyPressed = true;
+					uint32_t vkCode = pKeyMessage->Key();
+
+					if (vkCode == VK_ESCAPE && !escapeKeyPressed)
+					{
+						uint32_t modifiers = pKeyMessage->KeyFlags();
+
+						if (modifiers == 0)
+						{
+							escapeKeyPressed = true;
+						}
+					}
 				}
 			}
 		}
+
+		return result;
 	}
 
 	void UpdateRegionalCityThumbnail(const SC4Point<int32_t>& location)
